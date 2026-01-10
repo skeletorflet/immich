@@ -287,4 +287,21 @@ end
     )
   end
 
+  desc "Build Unsigned Release (No Codesign/Validation)"
+  lane :build_unsigned do
+    gym(
+      scheme: "Runner",
+      workspace: "Runner.xcworkspace",
+      configuration: "Release",
+      clean: true,
+      skip_package_ipa: true,
+      include_bitcode: false,
+      xcargs: "-skipMacroValidation CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' EXPANDED_CODE_SIGN_IDENTITY=''",
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "-"
+      }
+    )
+  end
+
 end
