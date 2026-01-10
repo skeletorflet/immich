@@ -297,6 +297,8 @@ end
       skip_package_ipa: true,
       include_bitcode: false,
       xcargs: "-skipMacroValidation CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' EXPANDED_CODE_SIGN_IDENTITY=''",
+      output_directory: "./build_output",
+      output_name: "Runner",
       export_options: {
         signingStyle: "manual",
         signingCertificate: "-"
