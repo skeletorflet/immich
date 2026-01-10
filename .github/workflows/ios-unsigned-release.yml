@@ -1,0 +1,74 @@
+name: Build Mobile Unsigned
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "release" ]
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build-unsigned-ipa:
+    name: Build Unsigned IPA
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version-file: ./mobile/pubspec.yaml
+          cache: true
+
+      - name: Install Flutter dependencies
+        working-directory: ./mobile
+        run: flutter pub get
+
+      - name: Generate translation files
+        working-directory: ./mobile
+        run: |
+          dart run easy_localization:generate -S ../i18n
+          dart run bin/generate_keys.dart
+
+      - name: Generate platform APIs
+        working-directory: ./mobile
+        run: make pigeon
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: ./mobile/ios
+
+      - name: Install CocoaPods dependencies
+        working-directory: ./mobile/ios
+        run: pod install
+
+      - name: Build iOS Release (Unsigned)
+        working-directory: ./mobile
+        run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        working-directory: ./mobile
+        run: |
+          mkdir Payload
+          mv build/ios/iphoneos/Runner.app Payload/
+          zip -r immich-ios-unsigned.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: immich-ios-unsigned
+          path: mobile/immich-ios-unsigned.ipa
+
+      - name: Upload Release Asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: mobile/immich-ios-unsigned.ipa
